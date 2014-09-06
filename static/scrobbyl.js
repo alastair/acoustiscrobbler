@@ -29,7 +29,7 @@ function call_pcm(data) {
 
         var result = Module.ccall('fingerprint_js_short', 'string', ['number', 'number'], [dataHeap, data.length]);
         Module._free(dataHeap);
-        //console.debug(result);
+        console.debug(result);
 
         lookup(result);
 }
@@ -79,4 +79,26 @@ $(function() {
             });
         }
     });
+    $("#click").click(function(e) {
+        startRecording();
+    });
 });
+
+function pulse(img)
+{
+    var minOpacity = .33;
+    var fadeOutDuration = 1200;
+    var fadeInDuration = 1200;
+
+    img.animate({
+        opacity: minOpacity
+    }, fadeOutDuration, function() {
+        img.animate({
+            opacity: 1
+        }, fadeInDuration, function() {
+            if(window.running) {
+                pulse(img);
+            }
+        })
+    });
+}

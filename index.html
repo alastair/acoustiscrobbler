@@ -25,12 +25,12 @@
   <ul id="recordingslist"></ul>
   <h2>Log</h2>
 -->
-  <pre id="log" style="display:none"></pre>
+  <pre id="log" ></pre>
+			<p id="errors"></p>
             <h2 id="artistname" style="padding-top:10px;"></h2>
             <h3 id="songname"></h3>
 			<button disabled="disabled" id="scbutton">Scrobble it</button>
             <a href="{{loginurl}}">Login to lastfm</a>
-			<p id="errors"></p>
 			<div id="tellmemore" data-toggle="modal" data-target="#about">Tell me more</div>
             <div class="modal fade" id="about">
               <div class="modal-dialog">
@@ -78,9 +78,12 @@ Audio is recorded with the Web Audio API. Currently it works better in Firefox t
 
   function startRecording(button) {
     recorder && recorder.record();
-    button.disabled = true;
-    button.nextElementSibling.disabled = false;
+    //button.disabled = true;
+    window.running = true;
+    pulse($("#headphones"));
+    //button.nextElementSibling.disabled = false;
     __log('Recording...');
+    timeoutID = window.setTimeout(stopRecording, 25000);
   }
 
   function resample() {
@@ -112,10 +115,11 @@ Audio is recorded with the Web Audio API. Currently it works better in Firefox t
     });
   }
 
-  function stopRecording(button) {
+  function stopRecording() {
     recorder && recorder.stop();
-    button.disabled = true;
-    button.previousElementSibling.disabled = false;
+    window.running = false;
+    //button.disabled = true;
+    //button.previousElementSibling.disabled = false;
     __log('Stopped recording.');
 
     // create WAV download link using audio data blob
