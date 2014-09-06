@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Scrobbyl</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+	<script type="text/javascript" src="static/scrobbyl.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+	<link href="static/scrobbyl.css" rel="stylesheet" />
+</head>
+<body>
+	<div id="wrap">
+		<div id="main">
+			<h2>What am I listening to?</h2>
+			<p class="explain">Click the headphones to listen.</p>
+			<br />
+			<div id="click"><img src="static/headphones.png" alt="headphones" /></div>
+
+  <button onclick="startRecording(this);">record</button>
+  <button onclick="stopRecording(this);" disabled>stop</button>
+
+<!--
+  <h2>Recordings</h2>
+  <ul id="recordingslist"></ul>
+  <h2>Log</h2>
+-->
+  <pre id="log" style="display:none"></pre>
+            <h2 id="artistname"></h2>
+            <h3 id="songname"></h3>
+			<button disabled="disabled" id="scbutton">Scrobble it</button>
+            <a href="{{loginurl}}">Login to lastfm</a><br>
+			<p id="errors"></p>
+			<div id="tellmemore" data-toggle="modal" data-target="#about">Tell me more</div>
+            <div class="modal fade" id="about">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title">How does this work?</h4>
+                  </div>
+                  <div class="modal-body">
+                We use the <a href="http://echoprint.me">Echoprint</a> open source fingerprinter to identify what songs are playing around you.
+By compiling echoprint to javascript with emscripten it can run the entire lookup on the client.<br>
+Audio is recorded with the Web Audio API. Currently it works better in Firefox than in Chrome.<br>
+                Headphones by <a href="http://svengraph.deviantart.com/">Svengraph</a><br>
+                Design by <a href="https://twitter.com/dellsystem">Wendy Liu</a><!-- <3 --><br>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                  </div>
+                </div><!-- /.modal-content -->
+              </div><!-- /.modal-dialog -->
+            </div><!-- /.modal -->
+		</div>
+	</div>
+	<div id="footer">
+	<div class="left">Made by <a href="http://twitter.com/alastairporter">Alastair Porter</a> at Music Hack Day Berlin 2014.</div>
+	<div class="right">Powered by <a href="http://echoprint.me">Echoprint</a> and <a href="http://the.echonest.com"><img src="static/echonest.png" style="display:inline-block; vertical-align:middle;"></a></div>
+</div>
+
+  <script>
+  function __log(e, data) {
+    log.innerHTML += "\n" + e + " " + (data || '');
+  }
+
+  var audio_context;
+  var recorder;
+
+  function startUserMedia(stream) {
+    window.stream = stream;
+    var input = audio_context.createMediaStreamSource(stream);
+    __log('Media stream created.');
+
+    recorder = new Recorder(input);
+    __log('Recorder initialised.');
+  }
+
+  function startRecording(button) {
+    recorder && recorder.record();
+    button.disabled = true;
+    button.nextElementSibling.disabled = false;
+    __log('Recording...');
+  }
+
+  function resample() {
+   // first argument gives a wav file, second 16bit le pcm with no header
+    recorder && recorder.smallWAV(function(dataview) {
+      /*
+      var audioBlob = new Blob([dataview], { type: 'audio/wav' });
+      var url = URL.createObjectURL(audioBlob);
+      var li = document.createElement('li');
+      var au = document.createElement('audio');
+      var hf = document.createElement('a');
+
+      au.controls = true;
+      au.src = url;
+      hf.href = url;
+      hf.download = new Date().toISOString() + '.wav';
+      hf.innerHTML = hf.download;
+      li.appendChild(au);
+      li.appendChild(hf);
+      recordingslist.appendChild(li);
+    */
+
+    }, function(pcm) {
+      var buffer = new ArrayBuffer(pcm.length * 2);
+      var view = new DataView(buffer);
+      recorder.floatTo16BitPCM(view, 0, pcm);
+      var data = new Int16Array(buffer);
+      call_pcm(data);
+    });
+  }
+
+  function stopRecording(button) {
+    recorder && recorder.stop();
+    button.disabled = true;
+    button.previousElementSibling.disabled = false;
+    __log('Stopped recording.');
+
+    // create WAV download link using audio data blob
+    createDownloadLink();
+    resample();
+
+    recorder.clear();
+  }
+
+  function createDownloadLink() {
+    recorder && recorder.exportWAV(function(blob) {
+      var url = URL.createObjectURL(blob);
+      var li = document.createElement('li');
+      var au = document.createElement('audio');
+      var hf = document.createElement('a');
+
+      au.controls = true;
+      au.src = url;
+      hf.href = url;
+      hf.download = new Date().toISOString() + '.wav';
+      hf.innerHTML = hf.download;
+      li.appendChild(au);
+      li.appendChild(hf);
+      recordingslist.appendChild(li);
+    });
+  }
+
+  window.onload = function init() {
+    try {
+      // webkit shim
+      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+      navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+      window.URL = window.URL || window.webkitURL;
+
+      audio_context = new AudioContext;
+      __log('Audio context set up.');
+      __log('navigator.getUserMedia ' + (navigator.getUserMedia ? 'available.' : 'not present!'));
+    } catch (e) {
+      alert('No web audio support in this browser!');
+    }
+
+    navigator.getUserMedia({audio: true}, startUserMedia, function(e) {
+      __log('No live audio input: ' + e);
+    });
+  };
+  </script>
+
+  <script src="static/recorder.js"></script>
+  <script src="static/codegen.js"></script>
+</body>
+</html>
