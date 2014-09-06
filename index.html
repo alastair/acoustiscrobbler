@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Scrobbyl</title>
+	<title>acoustiscrobble</title>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 	<script type="text/javascript" src="static/scrobbyl.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
@@ -14,10 +14,11 @@
 			<h2>What am I listening to?</h2>
 			<p class="explain">Click the headphones to listen.</p>
 			<br />
-			<div id="click"><img src="static/headphones.png" alt="headphones" /></div>
-
+			<div id="click"><img id="headphones" src="static/headphones.png" alt="headphones" /></div>
+<!--
   <button onclick="startRecording(this);">record</button>
   <button onclick="stopRecording(this);" disabled>stop</button>
+-->
 
 <!--
   <h2>Recordings</h2>
@@ -25,10 +26,10 @@
   <h2>Log</h2>
 -->
   <pre id="log" style="display:none"></pre>
-            <h2 id="artistname"></h2>
+            <h2 id="artistname" style="padding-top:10px;"></h2>
             <h3 id="songname"></h3>
 			<button disabled="disabled" id="scbutton">Scrobble it</button>
-            <a href="{{loginurl}}">Login to lastfm</a><br>
+            <a href="{{loginurl}}">Login to lastfm</a>
 			<p id="errors"></p>
 			<div id="tellmemore" data-toggle="modal" data-target="#about">Tell me more</div>
             <div class="modal fade" id="about">
@@ -118,7 +119,7 @@ Audio is recorded with the Web Audio API. Currently it works better in Firefox t
     __log('Stopped recording.');
 
     // create WAV download link using audio data blob
-    createDownloadLink();
+    //createDownloadLink();
     resample();
 
     recorder.clear();
